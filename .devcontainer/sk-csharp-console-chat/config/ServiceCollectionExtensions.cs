@@ -9,22 +9,21 @@ internal static class ServiceCollectionExtensions
     /// <param name="kernelBuilder"></param>
     /// <param name="kernelSettings"></param>
     /// <exception cref="ArgumentException"></exception>
-    internal static IServiceCollection AddChatCompletionService(this IServiceCollection serviceCollection, KernelSettings kernelSettings)
-    {
-        switch (kernelSettings.ServiceType.ToUpperInvariant())
+    internal static IServiceCollection AddChatCompletionService(
+        this IServiceCollection serviceCollection, KernelSettings kernelSettings)
+        => kernelSettings.ServiceType.ToUpperInvariant() switch
         {
-            case ServiceTypes.AzureOpenAI:
-                serviceCollection = serviceCollection.AddAzureOpenAIChatCompletion(kernelSettings.DeploymentId, kernelSettings.ModelId, endpoint: kernelSettings.Endpoint, apiKey: kernelSettings.ApiKey, serviceId: kernelSettings.ServiceId);
-                break;
-
-            case ServiceTypes.OpenAI:
-                serviceCollection = serviceCollection.AddOpenAIChatCompletion(modelId: kernelSettings.ModelId, apiKey: kernelSettings.ApiKey, orgId: kernelSettings.OrgId, serviceId: kernelSettings.ServiceId);
-                break;
-
-            default:
-                throw new ArgumentException($"Invalid service type value: {kernelSettings.ServiceType}");
-        }
-
-        return serviceCollection;
-    }
+            ServiceTypes.AzureOpenAI => serviceCollection.AddAzureOpenAIChatCompletion(
+                kernelSettings.DeploymentId,
+                kernelSettings.ModelId,
+                endpoint: kernelSettings.Endpoint,
+                apiKey: kernelSettings.ApiKey,
+                serviceId: kernelSettings.ServiceId),
+            ServiceTypes.OpenAI => serviceCollection.AddOpenAIChatCompletion(
+                modelId: kernelSettings.ModelId,
+                apiKey: kernelSettings.ApiKey,
+                orgId: kernelSettings.OrgId,
+                serviceId: kernelSettings.ServiceId),
+            _ => throw new ArgumentException($"Invalid service type value: {kernelSettings.ServiceType}"),
+        };
 }

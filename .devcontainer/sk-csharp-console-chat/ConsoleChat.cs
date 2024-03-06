@@ -40,7 +40,9 @@ internal class ConsoleChat(Kernel kernel, IHostApplicationLifetime lifeTime) : I
         {
             // Get user input
             Console.Write("User > ");
-            chatMessages.AddUserMessage(Console.ReadLine()!);
+            var userPrompt = Console.ReadLine() ?? string.Empty;
+            var augmentedPrompt = $"use the antlr file contents to write a code example for the request, conforming to the grammar definition: {userPrompt}";
+            chatMessages.AddUserMessage(augmentedPrompt);
 
             // Get the chat completions
             OpenAIPromptExecutionSettings openAIPromptExecutionSettings = new()
