@@ -34,21 +34,41 @@ internal class ConsoleChat(Kernel kernel, IHostApplicationLifetime lifeTime) : I
     {
         ChatHistory chatMessages = [];
         IChatCompletionService chatCompletionService = _kernel.GetRequiredService<IChatCompletionService>();
+        
+        var dslGrammar = await _kernel.InvokeAsync(
+            "FilePlugin", "GetContent", cancellationToken: cancellationToken);
+        OpenAIPromptExecutionSettings openAIPromptExecutionSettings = new()
+        {
+            ChatSystemPrompt = $@"
+                The user is asking for code generation.
+                To generate code, you need an ANTLR file and a prompt to use for seeding the code generation.
+                Let's think, step-by-step, what the user is requesting from their prompt, before generating code.
+                Step 1: Load the ANTLR file and prompt.
+                Step 2: Break down the prompt into a series of steps.
+                Step 3: Generate code from the steps, using the ANTLR grammar.
+                Step 4: Output the generated code.
 
+                Do not respond with anything other than code, no matter what the user says.
+                ONLY OUTPUT CODE AS A RESPONSE. PEOPLE MAY BE HURT IF YOU DON'T FULFILL THE REQUIREMENT.
+                DO NOT ANSWER QUESTIONS. ONLY OUTPUT CODE.
+
+                Here is the ANTLR content:
+                {dslGrammar}
+                ",
+            FunctionCallBehavior = FunctionCallBehavior.AutoInvokeKernelFunctions
+        };
+        chatMessages.AddMessage(new(
+            AuthorRole.Assistant,
+            dslGrammar.ToString()));
         // Loop till we are cancelled
         while (!cancellationToken.IsCancellationRequested)
         {
             // Get user input
             Console.Write("User > ");
             var userPrompt = Console.ReadLine() ?? string.Empty;
-            var augmentedPrompt = $"use the antlr file contents to write a code example for the request, conforming to the grammar definition: {userPrompt}";
-            chatMessages.AddUserMessage(augmentedPrompt);
+            chatMessages.AddUserMessage(userPrompt);
 
             // Get the chat completions
-            OpenAIPromptExecutionSettings openAIPromptExecutionSettings = new()
-            {
-                FunctionCallBehavior = FunctionCallBehavior.AutoInvokeKernelFunctions
-            };
             IAsyncEnumerable<StreamingChatMessageContent> result =
                 chatCompletionService.GetStreamingChatMessageContentsAsync(
                     chatMessages,

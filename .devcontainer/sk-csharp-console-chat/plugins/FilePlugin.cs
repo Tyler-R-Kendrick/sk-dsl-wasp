@@ -6,16 +6,16 @@ namespace Plugins;
 internal class FilePlugin
 {
     public string Content { get; set; } = string.Empty;
-    private const string DefaultPath = "grammars/rsharp.g4";
+    private const string DefaultPath = "grammars/taxDSL.g4";
 
     [KernelFunction]
-    [Description("Gets the contents of the file.")]
-    public string GetContent()
+    [Description("Gets the contents of a file from an optional filePath.")]
+    public string GetContent(string? filePath = DefaultPath)
     {
         Console.ForegroundColor = ConsoleColor.DarkBlue;
         Console.WriteLine("[Retrieving file contents]");
         Console.ResetColor();
-        return Content == string.Empty ? LoadContent() : Content;
+        return Content == string.Empty ? LoadContent(filePath) : Content;
     }
 
     [KernelFunction]
@@ -24,7 +24,7 @@ internal class FilePlugin
     {
         try
         {
-            filePath ??= "grammars/rsharp.g4";
+            filePath ??= DefaultPath;
             Content = File.ReadAllText(filePath);
             Console.ForegroundColor = ConsoleColor.DarkBlue;
             Console.WriteLine("[Loaded file contents]");

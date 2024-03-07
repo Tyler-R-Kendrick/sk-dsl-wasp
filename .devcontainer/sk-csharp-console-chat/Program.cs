@@ -28,7 +28,7 @@ builder.ConfigureServices((_, services) =>
             builder.Services.AddLogging(c => c.AddDebug().SetMinimumLevel(LogLevel.Information));
             builder.Services.AddChatCompletionService(kernelSettings);
             builder.Plugins.AddFromType<FilePlugin>();
-            builder.Plugins.AddFromPromptDirectory("plugins/ANTLR");
+            builder.Plugins.AddFromPromptDirectory("plugins/ANTLR_Code_Gen");
             return builder.Build();
         })
         .AddHostedService<ConsoleChat>();
