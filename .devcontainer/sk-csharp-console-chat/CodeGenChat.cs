@@ -65,7 +65,7 @@ internal class CodeGenChat(Kernel kernel,
         await base.HandleUserInputAsync(message, history, cancellationToken);
         var result = await GetFunctionOutputAsync(message, history, cancellationToken);
         history.AddFunctionMessage(result, "code_gen");
-        Console.WriteLine($"Function > {result}");
+        await WriteLineAsync($"Function > {result}");
         logger.LogInformation(result);
     }
 }

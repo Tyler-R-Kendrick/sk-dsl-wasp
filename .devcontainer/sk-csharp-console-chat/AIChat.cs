@@ -16,42 +16,9 @@ internal abstract class AIChat(
 {
     protected abstract string SystemPrompt { init; get; }
 
-    private IObservable<string> GetUserPrompts(ChatHistory history, CancellationToken cancellationToken)
-        => Observable.FromAsync(
-            async () =>
-            {
-                Console.Write("User > ");
-                var prompt = await reader.ReadLineAsync(cancellationToken).ConfigureAwait(true) ?? string.Empty;
-                history.AddUserMessage(prompt);
-                return prompt;
-            });
-
-    private IObservable<string> GetAssistantResponses(ChatHistory history, CancellationToken cancellationToken)
-    {
-        var observableAssistantPrompts = Observable.FromAsync(
-            async () =>
-            {
-                var results = completions.GetStreamingChatMessageContentsAsync(
-                    history,
-                    executionSettings: new OpenAIPromptExecutionSettings
-                    {
-                        ChatSystemPrompt = SystemPrompt,
-                        FunctionCallBehavior = FunctionCallBehavior.AutoInvokeKernelFunctions
-                    },
-                    cancellationToken: cancellationToken);
-                return await ProcessResults(results, cancellationToken);
-            });
-        return observableAssistantPrompts;
-    }
-
     protected override sealed async Task ExecuteAsync(CancellationToken cancellationToken)
     {
-        Console.WriteLine("AI Chat");
         logger.LogTrace("Starting Chat Session...");
-        logger.LogInformation("Info Starting Chat Session...");
-        logger.LogWarning("Warning Starting Chat Session...");
-        logger.LogCritical("Critical Starting Chat Session...");
-        logger.LogDebug("Debug Starting Chat Session...");
         ChatHistory history = [];
 
         OpenAIPromptExecutionSettings settings = new()
@@ -75,7 +42,7 @@ internal abstract class AIChat(
     protected virtual async Task<string> GetUserInputAsync(
         CancellationToken cancellationToken)
     {
-        writer.Write("User > ");
+        await WriteAsync("User > ");
         return (await reader.ReadLineAsync(cancellationToken)) ?? string.Empty;
     }
 
@@ -124,14 +91,14 @@ internal abstract class AIChat(
             {
                 if(streamContent.Role == AuthorRole.Assistant)
                 {
-                    Console.Write("Assistant > ");
+                    await WriteAsync("Assistant > ");
                 }
                 var contentMessage = streamContent.Content ?? string.Empty;
                 content.Append(contentMessage);
-                Console.Write(contentMessage);
+                await WriteAsync(contentMessage);
             }
             logger.LogTrace("Processed Results");
-            Console.WriteLine();
+            await WriteLineAsync();
             return content.ToString();
         }
         catch (OperationCanceledException ex)
@@ -144,5 +111,14 @@ internal abstract class AIChat(
             logger.LogDebug(ex, $"An error occurred.");
             return ex.Message;
         }
+    }
+
+    protected async Task WriteAsync(string? message = null)
+    {
+        await writer.WriteAsync(message);
+    }
+    protected async Task WriteLineAsync(string? message = null)
+    {
+        await writer.WriteLineAsync(message);
     }
 }
