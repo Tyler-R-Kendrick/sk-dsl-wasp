@@ -1,7 +1,7 @@
 {
     "schema": 1,
     "type": "completion",
-    "description": "Generates code based on user input",
+    "description": "Generate code from a user prompt in a given language",
     "completion": {
         "max_tokens": 256,
         "temperature": 0,
@@ -14,6 +14,16 @@
             {
                 "name": "input",
                 "description": "Input for this semantic function.",
+                "defaultValue": ""
+            },
+            {
+                "name": "language",
+                "description": "The language to use for the code generation",
+                "defaultValue": "csharp"
+            },
+            {
+                "name": "code",
+                "description": "The code to use as a starting point",
                 "defaultValue": ""
             }
         ]

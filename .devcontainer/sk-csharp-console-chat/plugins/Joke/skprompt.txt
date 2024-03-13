@@ -1,0 +1,3 @@
+{{console.log "joke" "info"}}
+
+Tell a funny joke. Keep it clean.

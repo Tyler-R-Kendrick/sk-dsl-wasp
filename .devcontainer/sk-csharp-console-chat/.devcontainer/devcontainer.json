@@ -16,7 +16,8 @@
 		"vscode": {
 			"extensions": [
 				"ms-dotnettools.csdevkit",
-				"GitHub.copilot"
+				"GitHub.copilot",
+				"mike-lischke.vscode-antlr4"
 			]
 		}
 	}

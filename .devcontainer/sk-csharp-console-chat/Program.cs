@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.SemanticKernel;
+using Microsoft.SemanticKernel.Plugins.Core;
 using Plugins;
 
 // Load the kernel settings
@@ -21,17 +22,25 @@ builder.ConfigureServices((_, services) =>
 {
 
     // Add kernel settings to the host builder
-    services
-        .AddSingleton(kernelSettings)
-        .AddTransient(serviceProvider => {
-            KernelBuilder builder = new();
-            builder.Services.AddLogging(c => c.AddDebug().SetMinimumLevel(LogLevel.Information));
-            builder.Services.AddChatCompletionService(kernelSettings);
-            builder.Plugins.AddFromType<FilePlugin>();
-            builder.Plugins.AddFromPromptDirectory("plugins/ANTLR_Code_Gen");
-            return builder.Build();
-        })
-        .AddHostedService<ConsoleChat>();
+        services
+            .AddSingleton(kernelSettings)
+            .AddTransient(serviceProvider => {
+                KernelBuilder builder = new();
+                builder.Services.AddLogging(c => c
+                    .AddConsole()
+                    .SetMinimumLevel(LogLevel.Information));
+                builder.Services.AddChatCompletionService(kernelSettings);
+                builder.Plugins.AddFromType<ConsoleLogPlugin>("console");
+                builder.Plugins.AddFromType<CodeValidatorPlugin>("code_validator");
+    #pragma warning disable SKEXP0050 // Type or member is obsolete
+                builder.Plugins.AddFromType<FileIOPlugin>("file");
+                builder.Plugins.AddFromType<ConversationSummaryPlugin>();
+    #pragma warning restore SKEXP0050 // Type or member is obsolete
+                builder.Plugins.AddFromPromptDirectory("plugins/CodeGen", "code_gen");
+                builder.Plugins.AddFromPromptDirectory("plugins/Joke", "joke");
+                return builder.Build();
+            })
+            .AddHostedService<CodeGenChat>();
 });
 
 // Build and run the host. This keeps the app running using the HostedService.
