@@ -60,11 +60,13 @@ internal static class JsonHelper
                 && isValidProperty?.GetBoolean() == true;
             if (TryGetProperty("errors", out var errors))
             {
-                var errorsArray = errors?.EnumerateArray().Select(x => x.GetString());
+                Console.WriteLine("validation errors: {0}", errors);
+                var errorsArray = errors?.EnumerateArray().Select(x => x.ToString());
                 if(errorsArray is not null && errorsArray.Any())
                 {
-                    Console.WriteLine("validation errorsArray: {0}", errorsArray);
-                    onError(string.Join(@"\n", errorsArray));
+                    var errorsString = $"fix the following errors:\n{string.Join(@"\n", errorsArray)}";
+                    Console.WriteLine($"validation errorsArray: {errorsString}");
+                    onError(errorsString);
                     return false;
                 }
             }
@@ -76,7 +78,7 @@ internal static class JsonHelper
             var hasCode = TryGetProperty("code", out var code);
             if (TryGetProperty("errors", out var errors))
             {
-                var errorsArray = errors?.EnumerateArray().Select(x => x.GetString());
+                var errorsArray = errors?.EnumerateArray().Select(x => x.ToString());
                 if(errorsArray is not null && errorsArray.Any())
                 {
                     onError(string.Join(@"\n", errorsArray));

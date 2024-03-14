@@ -72,7 +72,7 @@ internal class CodeGenChat(Kernel kernel,
             throw new InvalidOperationException("The code generator did not return a valid result.");
         }
         var element = JsonSerializer.Deserialize<JsonElement?>(resultString);
-        var code = element?.GetProperty("code").GetString();
+        var code = element?.GetProperty("code").ToString()?.ReplaceLineEndings();
         return code ?? throw new InvalidOperationException("The code generator did not return a valid code.");
     }
 
