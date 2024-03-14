@@ -2,7 +2,7 @@ using Microsoft.SemanticKernel;
 namespace Plugins;
 internal class KernelFunctionRetryPolicy(
     KernelFunction function,
-    Func<Task<KernelFunctionExecutionContext>, bool> retryCondition,
+    Func<Task<KernelFunctionExecutionContext>, Task<bool>> retryCondition,
     int maxRetries = 3)
 {
     public async Task<FunctionResult> InvokeAsync(
@@ -10,6 +10,6 @@ internal class KernelFunctionRetryPolicy(
         => await RetryPolicyHelper.Invoke(
             () => function.InvokeAsync(kernel, arguments, cancellationToken),
             async result => new KernelFunctionExecutionContext(kernel, await result, arguments, cancellationToken),
-            retryCondition,
+            context => retryCondition(context).Result,
             maxRetries);
 }

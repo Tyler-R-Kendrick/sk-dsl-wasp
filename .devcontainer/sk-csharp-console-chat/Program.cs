@@ -36,8 +36,7 @@ builder.ConfigureServices((_, services) =>
                 builder.Plugins.AddFromType<FileIOPlugin>("file");
                 builder.Plugins.AddFromType<ConversationSummaryPlugin>();
     #pragma warning restore SKEXP0050 // Type or member is obsolete
-                builder.Plugins.AddFromPromptDirectory("plugins/CodeGen", "code_gen");
-                builder.Plugins.AddFromPromptDirectory("plugins/Joke", "joke");
+                builder.Plugins.AddFromPromptDirectory("plugins");
                 return builder.Build();
             })
             .AddHostedService<CodeGenChat>();

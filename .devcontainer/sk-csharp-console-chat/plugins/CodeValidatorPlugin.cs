@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Text.Json;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.SemanticKernel;
@@ -8,12 +9,12 @@ public class CodeValidatorPlugin
 {
     [KernelFunction]
     [Description("Validates code for a language.")]
-    public bool ValidateCode(string code, string language = "csharp")
+    public JsonDocument ValidateCode(string code, string language = "csharp")
     {
         if(language != "csharp")
         {
             ConsoleAnnotator.WriteLine("Only C# is supported at the moment.", ConsoleColor.Red);
-            return true;
+            return JsonDocument.Parse(@"{""errors"": [""Only C# is supported at the moment.""]}");
         }
         try
         {
@@ -22,11 +23,11 @@ public class CodeValidatorPlugin
         catch (Exception ex)
         {
             ConsoleAnnotator.WriteLine($"An error occurred: {ex.Message}", ConsoleColor.Red);
-            return false;
+            return JsonDocument.Parse("{\"isValid\": false}");
         }
     }
 
-    private static bool ValidateCSharpCode(string code)
+    private static JsonDocument ValidateCSharpCode(string code)
     {
         ConsoleAnnotator.WriteLine($"Validating C# code: {code}", ConsoleColor.DarkBlue);
         SyntaxTree syntaxTree = CSharpSyntaxTree.ParseText(code);
@@ -42,9 +43,8 @@ public class CodeValidatorPlugin
         {
             var errorMessage = string.Join("\n", errors);
             ConsoleAnnotator.WriteLine($"Validating code: {errorMessage}", ConsoleColor.Red);
-            return false;
+            return JsonDocument.Parse($"{{\"errors\": [\"{errorMessage}\"]}}");
         }
-
-        return true;
+        return JsonDocument.Parse("{\"isValid\": true}");
     }
 }
