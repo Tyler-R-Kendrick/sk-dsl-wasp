@@ -1,6 +1,4 @@
 using System.Text.Json;
-using System.Text.Json.Nodes;
-using Json.More;
 using Microsoft.SemanticKernel;
 namespace Plugins;
 
@@ -20,10 +18,7 @@ internal static class JsonHelper
     }
     internal static bool TryParseProperty(JsonElement element, string name, out JsonElement? property)
     {
-        Console.WriteLine("element: " + element);
-        Console.WriteLine("name: " + name);
         property = element.Get(name);
-        Console.WriteLine("property: " + property);
         return !property?.ValueKind.Equals(JsonValueKind.Undefined) ?? false;
     }
 
@@ -68,6 +63,7 @@ internal static class JsonHelper
                 var errorsArray = errors?.EnumerateArray().Select(x => x.GetString());
                 if(errorsArray is not null && errorsArray.Any())
                 {
+                    Console.WriteLine("validation errorsArray: {0}", errorsArray);
                     onError(string.Join(@"\n", errorsArray));
                     return false;
                 }
