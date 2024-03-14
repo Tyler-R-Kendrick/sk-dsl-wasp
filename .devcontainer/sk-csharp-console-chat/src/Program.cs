@@ -39,6 +39,8 @@ builder.ConfigureServices((_, services) =>
                 builder.Plugins.AddFromPromptDirectory("plugins");
                 return builder.Build();
             })
+            .AddSingleton<CodeValidationStrategy>()
+            .AddSingleton<CodeGenerationStrategy>()
             .AddHostedService<CodeGenChat>();
 });
 
