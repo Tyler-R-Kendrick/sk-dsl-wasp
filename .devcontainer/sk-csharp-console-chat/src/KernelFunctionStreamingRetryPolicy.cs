@@ -9,9 +9,8 @@ internal class KernelFunctionStreamingRetryPolicy(
 {
     public IAsyncEnumerable<StreamingContentBase> InvokeStreamingAsync(
         Kernel kernel, KernelArguments arguments, CancellationToken cancellationToken)
-        => RetryPolicyHelper.Invoke(
+        => RetryPolicyHelper.Retry(
             () => function.InvokeStreamingAsync(kernel, arguments, cancellationToken),
-            result => new KernelFunctionStreamingExecutionContext(kernel, result, arguments, cancellationToken),
-            retryCondition,
+            result => retryCondition(new KernelFunctionStreamingExecutionContext(kernel, result, arguments, cancellationToken)),
             maxRetries);
 }

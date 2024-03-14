@@ -3,6 +3,6 @@ namespace Plugins;
 
 internal record KernelFunctionExecutionContext(
     Kernel Kernel,
-    FunctionResult Result,
+    FunctionResult? Result,
     KernelArguments Arguments,
     CancellationToken CancellationToken);
