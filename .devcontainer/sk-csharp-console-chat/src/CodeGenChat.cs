@@ -66,7 +66,13 @@ internal class CodeGenChat(Kernel kernel,
                 functionResult,
                 message => history.AddFunctionMessage(message, "code_gen")),
             3);
-        var code = result?.GetValue<JsonDocument>()?.RootElement.GetProperty("code").GetString();
+        var resultString = result?.ToString();
+        if (resultString is null)
+        {
+            throw new InvalidOperationException("The code generator did not return a valid result.");
+        }
+        var element = JsonSerializer.Deserialize<JsonElement?>(resultString);
+        var code = element?.GetProperty("code").GetString();
         return code ?? throw new InvalidOperationException("The code generator did not return a valid code.");
     }
 
@@ -80,7 +86,7 @@ internal class CodeGenChat(Kernel kernel,
             Console.WriteLine(plugin.Name+":"+plugin.Description);
             foreach(var function in plugin)
             {
-                Console.WriteLine("    "+function.Name);
+                Console.WriteLine("    " + function.Name);
             }
         }
         

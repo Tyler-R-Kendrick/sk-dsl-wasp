@@ -9,12 +9,12 @@ public class CodeValidatorPlugin
 {
     [KernelFunction]
     [Description("Validates code for a language.")]
-    public JsonDocument ValidateCode(string code, string language = "csharp")
+    public JsonElement ValidateCode(string code, string language = "csharp")
     {
         if(language != "csharp")
         {
             ConsoleAnnotator.WriteLine("Only C# is supported at the moment.", ConsoleColor.Red);
-            return JsonDocument.Parse(@"{""errors"": [""Only C# is supported at the moment.""]}");
+            return JsonSerializer.Deserialize<JsonElement>(@"{""errors"": [""Only C# is supported at the moment.""]}");
         }
         try
         {
@@ -23,11 +23,11 @@ public class CodeValidatorPlugin
         catch (Exception ex)
         {
             ConsoleAnnotator.WriteLine($"An error occurred: {ex.Message}", ConsoleColor.Red);
-            return JsonDocument.Parse("{\"isValid\": false}");
+            return JsonSerializer.Deserialize<JsonElement>("{\"isValid\": false}");
         }
     }
 
-    private static JsonDocument ValidateCSharpCode(string code)
+    private static JsonElement ValidateCSharpCode(string code)
     {
         ConsoleAnnotator.WriteLine($"Validating C# code: {code}", ConsoleColor.DarkBlue);
         SyntaxTree syntaxTree = CSharpSyntaxTree.ParseText(code);
@@ -43,8 +43,8 @@ public class CodeValidatorPlugin
         {
             var errorMessage = string.Join("\n", errors);
             ConsoleAnnotator.WriteLine($"Validating code: {errorMessage}", ConsoleColor.Red);
-            return JsonDocument.Parse($"{{\"errors\": [\"{errorMessage}\"]}}");
+            return JsonSerializer.Deserialize<JsonElement>($"{{\"errors\": [\"{errorMessage}\"]}}");
         }
-        return JsonDocument.Parse("{\"isValid\": true}");
+        return JsonSerializer.Deserialize<JsonElement>("{\"isValid\": true}");
     }
 }

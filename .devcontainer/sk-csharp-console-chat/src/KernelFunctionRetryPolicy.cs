@@ -8,7 +8,7 @@ internal class KernelFunctionRetryPolicy(
     public async Task<FunctionResult?> InvokeAsync(
         Kernel kernel, KernelArguments arguments, CancellationToken cancellationToken)
         => await RetryPolicyHelper.RetryAsync(
-            (attempt) => function.InvokeAsync(kernel, arguments, cancellationToken),
+            async (attempt) => await function.InvokeAsync(kernel, arguments, cancellationToken),
             result => retryCondition(new KernelFunctionExecutionContext(kernel, result, arguments, cancellationToken)),
             maxRetries);
 }

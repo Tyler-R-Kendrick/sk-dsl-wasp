@@ -1,3 +1,4 @@
+using System.Diagnostics.Contracts;
 using System.Reactive.Linq;
 using System.Text;
 using Microsoft.Extensions.Hosting;
@@ -18,6 +19,7 @@ internal abstract class AIChat(
 
     protected override sealed async Task ExecuteAsync(CancellationToken cancellationToken)
     {
+        Contract.Assert(messageObserverFactory != null);
         logger.LogTrace("Starting Chat Session...");
         ChatHistory history = [];
 
