@@ -5,12 +5,10 @@ using Microsoft.SemanticKernel.AI.ChatCompletion;
 namespace Plugins;
 internal class CodeGenChat(Kernel kernel,
     CodeValidationStrategy codeValidation,
-    ILogger<CodeGenChat> logger,
-    ILogger<ChatMessageObserver> chatLogger)
+    ILogger<CodeGenChat> logger)
     : AIChat(Console.In, Console.Out,
         kernel.GetRequiredService<IChatCompletionService>(),
-        logger,
-        history => new ChatMessageObserver(chatLogger, Console.Out))
+        logger)
 {
     protected override string SystemPrompt { get; init; } = @"
         {{console.log 'system prompt'}}

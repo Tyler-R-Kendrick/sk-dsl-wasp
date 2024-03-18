@@ -1,10 +1,14 @@
 using System.ComponentModel;
+using System.Reflection;
 using System.Text.Json;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.SemanticKernel;
-namespace Plugins;
 
+namespace Plugins;
+using static System.Environment;
+
+[Description("Validates code for a language.")]
 public class CodeValidatorPlugin
 {
     [KernelFunction]
@@ -29,9 +33,14 @@ public class CodeValidatorPlugin
 
     private static JsonElement ValidateCSharpCode(string code)
     {
-        ConsoleAnnotator.WriteLine($"Validating C# code: {code}", ConsoleColor.DarkBlue);
+        code = code.ReplaceLineEndings(NewLine);
+        ConsoleAnnotator.WriteLine($"code_validation:{NewLine}{code}{NewLine}", ConsoleColor.DarkBlue);
         SyntaxTree syntaxTree = CSharpSyntaxTree.ParseText(code);
+        var thisAssembly = typeof(CodeValidatorPlugin).Assembly;
+        var referencedAssemblies = thisAssembly.GetReferencedAssemblies()
+            .Select(x => MetadataReference.CreateFromFile(Assembly.Load(x).Location));
         CSharpCompilation compilation = CSharpCompilation.Create("ValidationCompilation")
+            .AddReferences(referencedAssemblies)
             .AddReferences(MetadataReference.CreateFromFile(typeof(object).Assembly.Location))
             .WithOptions(new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary))
             .AddSyntaxTrees(syntaxTree);
@@ -41,8 +50,8 @@ public class CodeValidatorPlugin
             .Select(x => x.GetMessage());
         if(errors.Any())
         {
-            var errorMessage = string.Join("\n", errors);
-            ConsoleAnnotator.WriteLine($"Validating code: {errorMessage}", ConsoleColor.Red);
+            var errorMessage = string.Join(NewLine, errors);
+            ConsoleAnnotator.WriteLine($"validation errors: {NewLine}{errorMessage}", ConsoleColor.Red);
             return JsonSerializer.Deserialize<JsonElement>($"{{\"errors\": [\"{errorMessage}\"]}}");
         }
         return JsonSerializer.Deserialize<JsonElement>("{\"isValid\": true}");

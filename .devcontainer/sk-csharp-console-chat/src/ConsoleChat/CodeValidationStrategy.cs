@@ -4,6 +4,7 @@ using Microsoft.SemanticKernel.AI.ChatCompletion;
 namespace Plugins;
 using static JsonHelper;
 using static RetryPolicyHelper;
+using static System.Environment;
 
 internal class CodeValidationStrategy(Kernel kernel,
     CodeGenerationStrategy codeGenerationStrategy)
@@ -25,14 +26,19 @@ internal class CodeValidationStrategy(Kernel kernel,
             {
                 Console.WriteLine($"[attempting code validation: {attempt}]");
                 var code = await codeGenerationStrategy.ExecuteAsync(userPrompt, history, cancellationToken);
-                var functionResult = await ValidateCode(code.ReplaceLineEndings(""), cancellationToken)
-                    ?? throw new InvalidOperationException("The code validator did not return a valid result.");;
-                history.AddFunctionMessage(functionResult.ToString(), "code_validator");
-                return functionResult;
+                return await ValidateCode(code.ReplaceLineEndings(NewLine), cancellationToken)
+                    ?? throw new InvalidOperationException("The code validator did not return a valid result.");
             },
             (functionResult) => !TryParseValidation(
                 functionResult,
-                message => history.AddFunctionMessage(message, "code_validator")),
+                message =>
+                {
+                    message = message.ReplaceLineEndings(NewLine);
+                    var augmentedMessage = $"There were errors with the code. Refector the code to fix the following errors:{NewLine}{message}";
+                    ConsoleAnnotator.WriteLine($"Function > {augmentedMessage}", ConsoleColor.DarkBlue);
+                    history.AddFunctionMessage(augmentedMessage, "code_validator");
+                    history.AddUserMessage(augmentedMessage);
+                }),
             3) ?? throw new InvalidOperationException("The code validator did not return a valid result.");
         return validationResult.ToString();
     }

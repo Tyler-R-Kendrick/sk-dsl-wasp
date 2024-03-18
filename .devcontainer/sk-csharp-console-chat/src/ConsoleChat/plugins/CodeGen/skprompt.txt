@@ -3,12 +3,12 @@
 
 Generate code by executing the following steps:
 
-Step 1: Read from an ANTLR grammar definition file:
+Step 1: Read from an ANTLR grammar definition file for the language {{$language}}:
 ```antlr
 {{file.Read $grammar}}.
 ```
 
-Step 2: Generate code from the grammar, based on user the input.
+Step 2: Generate code from the grammar, based on user the input, in the {{$language}} language.
 
 Step 3: Output json in the format:
 {

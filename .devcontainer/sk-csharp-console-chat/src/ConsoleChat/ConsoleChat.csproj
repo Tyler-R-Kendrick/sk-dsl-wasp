@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <UserSecretsId>101d672c-bd5f-41ea-8f24-58b5cac0bc6d</UserSecretsId>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="$(ProjectName).Tests;DynamicProxyGenAssembly2" />
+    <ProjectReference Include="..\SemanticKernel.Helpers\*.csproj" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="6.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="6.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Http.Resilience" Version="8.0.0" />
+    <PackageReference Include="Microsoft.SemanticKernel" Version="1.0.0-rc3" />
+    <PackageReference Include="Microsoft.SemanticKernel.Plugins.Core" Version="1.0.0-rc3" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="*" />
+    <PackageReference Include="System.Reactive" Version="6.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="config/appsettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="grammars/*.g4">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+</Project>

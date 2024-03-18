@@ -17,6 +17,11 @@
                 "defaultValue": "any example of code"
             },
             {
+                "name": "language",
+                "description": "The language to generate code in",
+                "defaultValue": "csharp"
+            },
+            {
                 "name": "grammar",
                 "description": "The ANTLR file defining the grammar for the language",
                 "defaultValue": "grammars/csharp.g4"

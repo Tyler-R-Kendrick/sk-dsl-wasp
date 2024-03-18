@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.Plugins.Core;
 using Plugins;
+using Polly;
 
 // Load the kernel settings
 var kernelSettings = KernelSettings.LoadSettings();
@@ -30,7 +31,17 @@ builder.ConfigureServices((_, services) =>
                     .AddConsole()
                     .SetMinimumLevel(LogLevel.Information));
                 builder.Services.AddChatCompletionService(kernelSettings);
-                builder.Plugins.AddFromType<ConsoleLogPlugin>("console");
+                builder.Plugins.AddFromType<ConsoleLogPlugin>("console", builder => builder
+                    .AddRetry(new Polly.Retry.RetryStrategyOptions 
+                    {
+                        MaxRetryAttempts = 3,
+                        OnRetry = (onRetryArgs) =>
+                        {
+                            Console.WriteLine($"Retrying {onRetryArgs.AttemptNumber} of {onRetryArgs.Context.OperationKey} due to {onRetryArgs.Outcome}");
+                            return ValueTask.CompletedTask;
+                        }
+                    })
+                    .Build());
                 builder.Plugins.AddFromType<CodeValidatorPlugin>("code_validator");
     #pragma warning disable SKEXP0050 // Type or member is obsolete
                 builder.Plugins.AddFromType<FileIOPlugin>("file");

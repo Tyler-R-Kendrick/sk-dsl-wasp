@@ -1,4 +1,3 @@
-using System.Diagnostics.Contracts;
 using System.Reactive.Linq;
 using System.Text;
 using Microsoft.Extensions.Hosting;
@@ -11,15 +10,13 @@ internal abstract class AIChat(
     TextReader reader,
     TextWriter writer,
     IChatCompletionService completions,
-    ILogger<AIChat> logger,
-    Func<ChatHistory, IObserver<ChatMessageContent>> messageObserverFactory)
+    ILogger<AIChat> logger)
     : BackgroundService
 {
     protected abstract string SystemPrompt { init; get; }
 
     protected override sealed async Task ExecuteAsync(CancellationToken cancellationToken)
     {
-        Contract.Assert(messageObserverFactory != null);
         logger.LogTrace("Starting Chat Session...");
         ChatHistory history = [];
 
@@ -116,11 +113,7 @@ internal abstract class AIChat(
     }
 
     protected async Task WriteAsync(string? message = null)
-    {
-        await writer.WriteAsync(message);
-    }
+        => await writer.WriteAsync(message);
     protected async Task WriteLineAsync(string? message = null)
-    {
-        await writer.WriteLineAsync(message);
-    }
+        => await writer.WriteLineAsync(message);
 }

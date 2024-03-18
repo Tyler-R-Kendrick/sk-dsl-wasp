@@ -1,8 +1,8 @@
 namespace Plugins;
 
-internal class RetryPolicyHelper
+public class RetryPolicyHelper
 {        
-    internal static async Task<T?> RetryAsync<T>(
+    public static async Task<T?> RetryAsync<T>(
         Func<int, Task<T?>> action,
         Func<T?, bool> retryCondition,
         int maxAttempts)
@@ -17,7 +17,7 @@ internal class RetryPolicyHelper
         return result;
     }
     
-    internal static TResult Retry<TResult>(
+    public static TResult Retry<TResult>(
         Func<TResult> resultGenerator,
         Func<TResult, bool> retryCondition,
         int maxRetries = 3)
@@ -35,5 +35,4 @@ internal class RetryPolicyHelper
         } while (retries < maxRetries);
         return result;
     }
-
 }
