@@ -36,11 +36,6 @@ internal class CodeGenChat(Kernel kernel,
         CancellationToken cancellationToken)
     {
         await base.HandleUserInputAsync(message, history, cancellationToken);
-
-        //Execute skills on the user input to force the system to output code.
-        // TODO: Find out why semantic skills aren't being executed.
-        var result = await codeValidation.ExecuteAsync(message, history, cancellationToken);
-        await WriteLineAsync($"Function > {result}");
-        logger.LogInformation(result);
+        _ = await codeValidation.ExecuteAsync(message, history, cancellationToken);
     }
 }

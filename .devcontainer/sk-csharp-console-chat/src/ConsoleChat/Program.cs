@@ -37,7 +37,11 @@ builder.ConfigureServices((_, services) =>
             builder.Services.AddChatCompletionService(kernelSettings);
             builder.Plugins.AddFromType<ConsoleLogPlugin>("console");
             var functionFacade = new FunctionFilterMediator();
-            builder.Plugins.AddFunctionFilter(onInvoked: functionFacade.OnNext);
+            builder.Plugins.AddFunctionFilter(onInvoked: context => 
+            {
+                ConsoleAnnotator.WriteLine($"func: {context.Function.Name}", ConsoleColor.DarkGreen);
+                functionFacade.OnNext(context);
+            });
             builder.Plugins.AddFromType<CodeValidatorPlugin>("code_validator");
 #pragma warning disable SKEXP0050 // Type or member is obsolete
             builder.Plugins.AddFromType<FileIOPlugin>("file");
@@ -70,6 +74,11 @@ namespace Plugins
     public class CodeGenFilterObserver(Kernel kernel, int maxRetryAttempts = 3)
         : FunctionFilterObserver("CodeGen")
     {
+        public override void OnNext(FunctionInvokedContext context)
+        {
+            OnNextAsync(context).GetAwaiter().GetResult();
+            base.OnNext(context);
+        }
         public async Task OnNextAsync(FunctionInvokedContext context)
         {
             int retryAttempt = 0;
@@ -88,7 +97,10 @@ namespace Plugins
             });
             var codeValidationResponse = JsonSerializer.Deserialize<CodeValidationJsonResponse>(validationResult.ToString());
             var history = context.Arguments["history"] as string;
-            if(history != null && codeValidationResponse != null && codeValidationResponse.Errors.Length != 0)
+            if(history != null 
+                && codeValidationResponse != null
+                && codeValidationResponse.Errors != null
+                && codeValidationResponse.Errors.Length != 0)
             {
                 var errors = NewLine + string.Join(NewLine, codeValidationResponse.Errors);
                 history += errors;
@@ -101,8 +113,7 @@ namespace Plugins
                     { "input", context.Arguments["input"] },
                     { "history", history },
                     { "language", context.Arguments["language"] },
-                    { "grammar", context.Arguments["grammar"] },
-                    { "errors", context.Arguments["errors"] }
+                    { "grammar", context.Arguments["grammar"] }
                 });
             }
         }
@@ -166,19 +177,20 @@ namespace Plugins
         }
 
         public override void OnNext(FunctionInvokedContext value)
-        {
+        {            
             _observers.ForEach(observer =>
             {
+                ConsoleAnnotator.WriteLine($"observing: {value.Function.Name}", ConsoleColor.DarkGreen);
                 switch(observer)
                 {
                     case FunctionFilterObserver filterObserver when filterObserver.Name == value.Function.Name:
+                        ConsoleAnnotator.WriteLine("filtering observer");
                         filterObserver.OnNext(value);
                         break;
                     default:
-                        observer.OnNext(value);
+                        //observer.OnNext(value);
                         break;
                 }
-                observer.OnNext(value);
             });
         }
 
