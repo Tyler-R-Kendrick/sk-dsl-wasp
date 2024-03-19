@@ -10,11 +10,12 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="$(ProjectName).Tests;DynamicProxyGenAssembly2" />
+    <PackageReference Include="Castle.Core" Version="5.*" />
     <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="6.0.0" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="6.0.0" />
     <PackageReference Include="Microsoft.Extensions.Http.Resilience" Version="8.0.0" />
-    <PackageReference Include="Microsoft.SemanticKernel" Version="1.0.0-rc3" />
-    <PackageReference Include="Microsoft.SemanticKernel.Plugins.Core" Version="1.0.0-rc3" />
+    <PackageReference Include="Microsoft.SemanticKernel" Version="1.6.2" />
+    <PackageReference Include="Microsoft.SemanticKernel.Plugins.Core" Version="1.6.2-alpha" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="*" />
     <PackageReference Include="System.Reactive" Version="6.0.0" />
     <PackageReference Include="Polly.RateLimiting" Version="8.3.1" />

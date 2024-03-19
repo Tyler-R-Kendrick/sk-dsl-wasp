@@ -2,8 +2,9 @@ using System.Reactive.Linq;
 using System.Text;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.SemanticKernel.AI.ChatCompletion;
-using Microsoft.SemanticKernel.Connectors.AI.OpenAI;
+using Microsoft.SemanticKernel;
+using Microsoft.SemanticKernel.ChatCompletion;
+using Microsoft.SemanticKernel.Connectors.OpenAI;
 namespace Plugins;
 
 internal abstract class AIChat(
@@ -23,7 +24,7 @@ internal abstract class AIChat(
         OpenAIPromptExecutionSettings settings = new()
         {
             ChatSystemPrompt = SystemPrompt,
-            FunctionCallBehavior = FunctionCallBehavior.AutoInvokeKernelFunctions
+            ToolCallBehavior = ToolCallBehavior.AutoInvokeKernelFunctions,
         };
         while (!cancellationToken.IsCancellationRequested)
         {

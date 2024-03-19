@@ -1,10 +1,10 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.SemanticKernel;
-using Microsoft.SemanticKernel.AI.ChatCompletion;
+using Microsoft.SemanticKernel.ChatCompletion;
 
 namespace Plugins;
 internal class CodeGenChat(Kernel kernel,
-    CodeValidationStrategy codeValidation,
+    CodeGenerationStrategy codeValidation,
     ILogger<CodeGenChat> logger)
     : AIChat(Console.In, Console.Out,
         kernel.GetRequiredService<IChatCompletionService>(),

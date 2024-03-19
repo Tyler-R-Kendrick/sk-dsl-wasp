@@ -1,4 +1,5 @@
-using Microsoft.SemanticKernel.AI.ChatCompletion;
+using Microsoft.SemanticKernel;
+using Microsoft.SemanticKernel.ChatCompletion;
 namespace Plugins;
 
 internal static class StreamingChatMessageContentExtensions
