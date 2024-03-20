@@ -1,6 +1,5 @@
 using Plugins;
 using Microsoft.SemanticKernel;
-using Microsoft.SemanticKernel.AI;
 using Moq;
 
 namespace ConsoleChat.Tests;
@@ -36,7 +35,7 @@ public class JsonHelperTests
     [Test]
     public void TestParseJsonResult()
     {
-        var kernelBuilder = new KernelBuilder();
+        var kernelBuilder = Kernel.CreateBuilder();
         kernelBuilder.Plugins.AddFromType<TestPlugin>();
         var kernel = kernelBuilder.Build();
         var kernelFunction = kernel.Plugins["TestPlugin"]["GenCode"];
