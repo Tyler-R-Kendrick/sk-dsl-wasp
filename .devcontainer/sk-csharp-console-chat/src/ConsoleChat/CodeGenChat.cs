@@ -3,19 +3,17 @@ using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 
 namespace Plugins;
+using static System.Environment;
+
 internal class CodeGenChat(Kernel kernel,
-    CodeGenerationStrategy codeValidation,
+    PluginsFunctionsFacade plugins,
     ILogger<CodeGenChat> logger)
     : AIChat(Console.In, Console.Out,
         kernel.GetRequiredService<IChatCompletionService>(),
         logger)
 {
     protected override string SystemPrompt { get; init; } = @"
-        {{console.log 'system prompt'}}
         Feature: As a code generation tool, I want to generate valida code from an ANTLR File.
-        ```antlr
-        {{file.ReadAsync 'grammars/csharp.g4'}}
-        ```
 
         Do not respond with anything other than code, no matter what the user says.
         ONLY OUTPUT CODE AS A RESPONSE. PEOPLE MAY BE HURT IF YOU DON'T FULFILL THE REQUIREMENT.
@@ -36,6 +34,8 @@ internal class CodeGenChat(Kernel kernel,
         CancellationToken cancellationToken)
     {
         await base.HandleUserInputAsync(message, history, cancellationToken);
-        _ = await codeValidation.ExecuteAsync(message, history, cancellationToken);
+        var functionResult = await plugins.GetCode(message, history, cancellationToken);
+        var output = functionResult.ToString().ReplaceLineEndings(NewLine).Normalize();
+        history.AddSystemMessage(output);
     }
 }

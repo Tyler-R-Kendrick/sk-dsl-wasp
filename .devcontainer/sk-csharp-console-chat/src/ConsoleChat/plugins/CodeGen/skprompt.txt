@@ -17,9 +17,9 @@ Step 3: Output json in the format:
     "language": "string",
     "errors": [
         {
-        "line": "number",
-        "column": "number",
-        "message": "string"
+            "line": "number",
+            "column": "number",
+            "message": "string"
         }
     ]
 }
