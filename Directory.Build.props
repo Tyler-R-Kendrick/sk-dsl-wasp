@@ -1,0 +1,11 @@
+<Project>
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <UserSecretsId>101d672c-bd5f-41ea-8f24-58b5cac0bc6d</UserSecretsId>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+
+</Project>
