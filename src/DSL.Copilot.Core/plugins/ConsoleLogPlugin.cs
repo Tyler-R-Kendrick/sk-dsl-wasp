@@ -6,7 +6,7 @@ namespace Plugins;
 using static ConsoleColor;
 
 [Description("Logs a message to the console.")]
-internal class ConsoleLogPlugin
+public class ConsoleLogPlugin
 {
     [KernelFunction]
     [Description("Logs a message to the console.")]

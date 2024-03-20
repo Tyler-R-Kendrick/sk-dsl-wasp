@@ -4,7 +4,7 @@ using Microsoft.SemanticKernel;
 using static System.Environment;
 
 namespace Plugins;
-internal class CodeGenFilterObserver(PluginsFunctionsFacade plugins, int maxRetryAttempts = 3)
+public class CodeGenFilterObserver(PluginsFunctionsFacade plugins, int maxRetryAttempts = 3)
     : FunctionFilterObserver("CodeGen")
 {
     public override void OnNext(FunctionInvokedContext context)
