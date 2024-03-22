@@ -1,4 +1,5 @@
 ﻿using System.Reactive.Linq;
+using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -8,6 +9,7 @@ using Microsoft.SemanticKernel.Plugins.Core;
 using Microsoft.SemanticKernel.PromptTemplates.Handlebars;
 using Plugins;
 using Polly;
+using static System.Environment;
 // Load the kernel settings
 var kernelSettings = KernelSettings.LoadSettings();
 
@@ -53,27 +55,57 @@ builder.ConfigureServices((_, services) =>
         })
         .AddResilienceEnricher()
         .AddSingleton<PluginsFunctionsFacade>()
-        .AddSingleton<CodeGenFilterObserver>()
         .AddSingleton<ChatHistory>([])
-        .AddResiliencePipeline<string, CodeValidationJsonResponse>("validation", config =>
+        .AddResiliencePipeline<string, FunctionResult>("code-gen", (config, context) =>
         {
             config.AddRetry(new()
             {
                 MaxRetryAttempts = 3,
                 BackoffType = DelayBackoffType.Constant,
-                ShouldHandle = args => ValueTask.FromResult(!args.Outcome!.Result!.IsValid),
-                OnRetry = args => ValueTask.CompletedTask
+                ShouldHandle = async args =>
+                {
+                    var services = context.ServiceProvider;
+                    var history = services.GetRequiredService<ChatHistory>();
+                    var codeOutcome = args.Outcome;
+                    if(codeOutcome.Exception != null)
+                    {
+                        history.AddSystemMessage(codeOutcome.Exception.ToString());
+                        return true;
+                    }
+                    var plugins = services.GetRequiredService<PluginsFunctionsFacade>();
+                    var validationResult = await plugins.ValidateCode(
+                        args.Outcome.Result!.ToString()!,
+                        services.GetRequiredService<ChatHistory>(),
+                        "csharp");
+                    var resultString = validationResult.ToString().Normalize();
+                    ConsoleAnnotator.WriteLine(resultString);
+                    history.AddSystemMessage(resultString);
+                    var jsonResult = JsonSerializer.Deserialize<CodeValidationJsonResponse>(resultString);
+                    var isValid = jsonResult?.IsValid == true;
+                    if(!isValid && jsonResult != null && jsonResult.Errors != null && jsonResult.Errors.Length != 0
+                        && codeOutcome.Result != null && codeOutcome.Result.Metadata != null)
+                    {
+                        var codeResult = codeOutcome.Result;
+                        var code = codeResult!.Metadata!["code"];
+                        var codeString = $"The following code has errors:{NewLine}{code}";
+                        var errors = string.Join(NewLine, jsonResult);
+                        var errorString = $"Correct the following errors in the code:{NewLine}{errors}";
+                        history.AddUserMessage(codeString + NewLine + errorString);
+                    }
+                    return !isValid;
+                }
             });
         })
         .AddHostedService<CodeGenChat>(provider =>
         {
             var kernel = provider.GetRequiredService<Kernel>();
-            functionFacade.Subscribe(provider.GetRequiredService<CodeGenFilterObserver>());
             return new(
                 kernel,
+                provider.GetRequiredKeyedService<ResiliencePipeline<FunctionResult>>("code-gen"),
                 new PluginsFunctionsFacade(kernel),
                 provider.GetRequiredService<ChatHistory>(),
                 File.ReadAllText("grammars/csharp.g4"),
+                "csharp",
                 provider.GetRequiredService<ILoggerFactory>()
                     .CreateLogger<CodeGenChat>());
         });
