@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "type": "completion",
+  "description": "Answers questions about code defined by an ANTLR grammar.",
+  "execution_settings": {
+    "default": {
+      "max_tokens": 1000,
+      "temperature": 0
+    },
+    "gpt-4": {
+      "model_id": "gpt-4-32k",
+      "max_tokens": 8192,
+      "temperature": 0.3
+    }
+  },
+  "input_variables": [
+    {
+      "name": "request",
+      "description": "The junior developer's request.",
+      "required": true
+    },
+    {
+      "name": "antlr_def",
+      "description": "The ANTLR definition of the grammar the custom programming language uses.",
+      "required": true
+    }
+  ]
+}

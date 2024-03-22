@@ -20,6 +20,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\DslCopilot.Kernel\DslCopilot.Kernel.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Update="config/appsettings.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

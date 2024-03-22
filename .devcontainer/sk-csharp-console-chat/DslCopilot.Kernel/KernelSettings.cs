@@ -2,7 +2,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
-internal class KernelSettings
+public class KernelSettings
 {
     public const string DefaultConfigFile = "config/appsettings.json";
 
@@ -36,7 +36,7 @@ internal class KernelSettings
     /// <summary>
     /// Load the kernel settings from settings.json if the file exists and if not attempt to use user secrets.
     /// </summary>
-    internal static KernelSettings LoadSettings()
+    public static KernelSettings LoadSettings()
     {
         try
         {

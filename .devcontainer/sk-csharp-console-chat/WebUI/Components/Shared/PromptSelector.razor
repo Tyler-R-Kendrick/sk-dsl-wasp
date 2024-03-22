@@ -1,0 +1,22 @@
+﻿<label><b>Prompt:</b></label>
+<select class="form-control" id="promptSelector" @onchange="ChangePrompt">
+  @foreach (var prompt in Prompts)
+  {
+    <option value="@prompt">@prompt</option>
+  }
+</select>
+
+@code {
+
+  [Parameter]
+  public EventCallback<string> OnPromptChanged { get; set; }
+
+  private string[] Prompts = new string[] { "tyler", "dsl" };
+  string SelectedPrompt { get; set; }
+
+  private void ChangePrompt(ChangeEventArgs e)
+  {
+    SelectedPrompt = e.Value.ToString();
+    OnPromptChanged.InvokeAsync(SelectedPrompt);
+  }
+}

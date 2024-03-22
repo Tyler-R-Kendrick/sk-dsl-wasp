@@ -7,7 +7,7 @@ using Microsoft.SemanticKernel.ChatCompletion;
 using Microsoft.SemanticKernel.Connectors.OpenAI;
 namespace Plugins;
 
-internal abstract class AIChat(
+public abstract class AIChat(
     TextReader reader,
     TextWriter writer,
     IChatCompletionService completions,

@@ -5,7 +5,7 @@ using Microsoft.SemanticKernel.ChatCompletion;
 namespace Plugins;
 using static System.Environment;
 
-internal class CodeGenChat(Kernel kernel,
+public class WebCodeGenChat(Kernel kernel,
     PluginsFunctionsFacade plugins,
     ILogger<CodeGenChat> logger)
     : AIChat(Console.In, Console.Out,

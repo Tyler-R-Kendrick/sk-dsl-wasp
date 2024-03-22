@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>772593f5-56aa-4a5e-b540-601ae8222e58</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Azure.Storage.Blobs" Version="12.19.1" />
+    <PackageReference Include="Microsoft.SemanticKernel" Version="1.6.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DslCopilot.Kernel\DslCopilot.Kernel.csproj" />
+    <ProjectReference Include="..\src\ConsoleChat\DslCopilot.ConsoleUI.csproj" />
+    <ProjectReference Include="..\src\SemanticKernel.Helpers\SemanticKernel.Helpers.csproj" />
+  </ItemGroup>
+
+</Project>

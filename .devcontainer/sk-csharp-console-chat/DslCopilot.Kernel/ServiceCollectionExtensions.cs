@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.SemanticKernel;
 
-internal static class ServiceCollectionExtensions
+public static class ServiceCollectionExtensions
 {
     /// <summary>
     /// Adds a chat completion service to the list. It can be either an OpenAI or Azure OpenAI backend service.
@@ -9,7 +9,7 @@ internal static class ServiceCollectionExtensions
     /// <param name="kernelBuilder"></param>
     /// <param name="kernelSettings"></param>
     /// <exception cref="ArgumentException"></exception>
-    internal static IServiceCollection AddChatCompletionService(
+    public static IServiceCollection AddChatCompletionService(
         this IServiceCollection serviceCollection, KernelSettings kernelSettings)
         => kernelSettings.ServiceType.ToUpperInvariant() switch
         {
@@ -26,7 +26,7 @@ internal static class ServiceCollectionExtensions
                 serviceId: kernelSettings.ServiceId),
             _ => throw new ArgumentException($"Invalid service type value: {kernelSettings.ServiceType}"),
         };
-    internal static IKernelBuilder AddChatCompletionService(
+    public static IKernelBuilder AddChatCompletionService(
         this IKernelBuilder builder, KernelSettings kernelSettings)
         => kernelSettings.ServiceType.ToUpperInvariant() switch
         {
