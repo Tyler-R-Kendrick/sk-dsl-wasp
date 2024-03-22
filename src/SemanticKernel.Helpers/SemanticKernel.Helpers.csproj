@@ -1,13 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-    <UserSecretsId>101d672c-bd5f-41ea-8f24-58b5cac0bc6d</UserSecretsId>
-    <LangVersion>latest</LangVersion>
-  </PropertyGroup>
-
   <ItemGroup>
     <InternalsVisibleTo Include="$(ProjectName).Tests;DynamicProxyGenAssembly2" />
     <PackageReference Include="Castle.Core" Version="5.*" />

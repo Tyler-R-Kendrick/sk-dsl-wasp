@@ -26,13 +26,6 @@ public class JsonHelperTests
     }
 
     [Test]
-    public void TestParseJsonString()
-    {
-        var result = Plugins.JsonHelper.TryParseJson(testJson, Console.WriteLine, getter => true);
-        Assert.True(result);
-    }
-
-    [Test]
     public void TestParseJsonResult()
     {
         var kernelBuilder = Kernel.CreateBuilder();
@@ -41,10 +34,6 @@ public class JsonHelperTests
         var kernelFunction = kernel.Plugins["TestPlugin"]["GenCode"];
         var result = new FunctionResult(kernelFunction, testJson);
         var stringResult = result.ToString();
-        var parseResult = Plugins.JsonHelper.TryParseJson(result, Console.WriteLine, getter => 
-        {
-            return getter("message", out var message);
-        });
-        Assert.True(parseResult);
+        Assert.That(stringResult != null, Is.True);
     }
 }

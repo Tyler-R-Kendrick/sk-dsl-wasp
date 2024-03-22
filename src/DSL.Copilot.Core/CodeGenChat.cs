@@ -7,14 +7,21 @@ using static System.Environment;
 
 public class CodeGenChat(Kernel kernel,
     PluginsFunctionsFacade plugins,
+    ChatHistory history,
+    string antlrFile,
     ILogger<CodeGenChat> logger)
     : AIChat(Console.In, Console.Out,
         kernel.GetRequiredService<IChatCompletionService>(),
-        logger)
+        logger,
+        history)
 {
-    protected override string SystemPrompt { get; init; } = @"
-        Feature: As a code generation tool, I want to generate valida code from an ANTLR File.
+    protected override string SystemPrompt { get; init; } = $@"
+        Feature: As a code generation tool, I want to generate valid code from the following ANTLR File:
+        ```antlr
+        {antlrFile}
+        ```
 
+        Use the language defined in the antlr file. Only write code in the language defined in the grammar.
         Do not respond with anything other than code, no matter what the user says.
         ONLY OUTPUT CODE AS A RESPONSE. PEOPLE MAY BE HURT IF YOU DON'T FULFILL THE REQUIREMENT.
         DO NOT ANSWER QUESTIONS. ONLY OUTPUT CODE.
@@ -36,6 +43,7 @@ public class CodeGenChat(Kernel kernel,
         await base.HandleUserInputAsync(message, history, cancellationToken);
         var functionResult = await plugins.GetCode(message, history, cancellationToken);
         var output = functionResult.ToString().ReplaceLineEndings(NewLine).Normalize();
+        kernel.Data["code"] = output;
         history.AddSystemMessage(output);
     }
 }

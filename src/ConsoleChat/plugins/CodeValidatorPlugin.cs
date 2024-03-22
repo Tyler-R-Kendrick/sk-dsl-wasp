@@ -13,7 +13,11 @@ public class CodeValidatorPlugin
 {
     [KernelFunction]
     [Description("Validates code for a language.")]
-    public JsonElement ValidateCode(string code, string language = "csharp")
+    public JsonElement ValidateCode(
+        [Description("The code as input")]
+        string input,
+        [Description("The language of the code")]
+        string language = "csharp")
     {
         if(language != "csharp")
         {
@@ -22,7 +26,7 @@ public class CodeValidatorPlugin
         }
         try
         {
-            return ValidateCSharpCode(code);
+            return ValidateCSharpCode(input);
         }
         catch (Exception ex)
         {

@@ -3,8 +3,11 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.SemanticKernel;
+using Microsoft.SemanticKernel.ChatCompletion;
 using Microsoft.SemanticKernel.Plugins.Core;
+using Microsoft.SemanticKernel.PromptTemplates.Handlebars;
 using Plugins;
+using Polly;
 // Load the kernel settings
 var kernelSettings = KernelSettings.LoadSettings();
 
@@ -21,6 +24,7 @@ var builder = Host.CreateDefaultBuilder(args)
 builder.ConfigureServices((_, services) =>
 {
     // Add kernel settings to the host builder
+    var functionFacade = new FunctionFilterMediator();
     services
         .AddSingleton(kernelSettings)
         .AddTransient(serviceProvider => {
@@ -29,29 +33,52 @@ builder.ConfigureServices((_, services) =>
                 .AddConsole()
                 .SetMinimumLevel(LogLevel.Information));
             builder.Services.AddChatCompletionService(kernelSettings);
-            builder.Services.AddSingleton<PluginsFunctionsFacade>();
             builder.Plugins.AddFromType<ConsoleLogPlugin>("console");
-            var functionFacade = new FunctionFilterMediator();
             builder.Plugins.AddFunctionFilter(onInvoked: context => 
             {
                 ConsoleAnnotator.WriteLine($"func: {context.Function.Name}", ConsoleColor.DarkGreen);
                 functionFacade.OnNext(context);
             });
             builder.Plugins.AddFromType<CodeValidatorPlugin>("code_validator");
-#pragma warning disable SKEXP0050 // Type or member is obsolete
             builder.Plugins.AddFromType<FileIOPlugin>("file");
             builder.Plugins.AddFromType<ConversationSummaryPlugin>();
-#pragma warning restore SKEXP0050 // Type or member is obsolete
             builder.Plugins.AddFromPromptDirectory("plugins");
             var kernel = builder.Build();
-            var plugins = new PluginsFunctionsFacade(kernel);
-            functionFacade.Subscribe(new CodeGenFilterObserver(plugins));
+            KernelFunction formatAsJsonFunction = kernel.CreateFunctionFromPromptYaml(
+                File.ReadAllText("plugins/formatAsJson.yaml")!,
+                promptTemplateFactory: new HandlebarsPromptTemplateFactory()
+            );
+            builder.Plugins.AddFromFunctions("plugins", [formatAsJsonFunction]);
             return kernel;
         })
         .AddResilienceEnricher()
         .AddSingleton<PluginsFunctionsFacade>()
-        .AddHostedService<CodeGenChat>();
+        .AddSingleton<CodeGenFilterObserver>()
+        .AddSingleton<ChatHistory>([])
+        .AddResiliencePipeline<string, CodeValidationJsonResponse>("validation", config =>
+        {
+            config.AddRetry(new()
+            {
+                MaxRetryAttempts = 3,
+                BackoffType = DelayBackoffType.Constant,
+                ShouldHandle = args => ValueTask.FromResult(!args.Outcome!.Result!.IsValid),
+                OnRetry = args => ValueTask.CompletedTask
+            });
+        })
+        .AddHostedService<CodeGenChat>(provider =>
+        {
+            var kernel = provider.GetRequiredService<Kernel>();
+            functionFacade.Subscribe(provider.GetRequiredService<CodeGenFilterObserver>());
+            return new(
+                kernel,
+                new PluginsFunctionsFacade(kernel),
+                provider.GetRequiredService<ChatHistory>(),
+                File.ReadAllText("grammars/csharp.g4"),
+                provider.GetRequiredService<ILoggerFactory>()
+                    .CreateLogger<CodeGenChat>());
+        });
 });
+
 
 // Build and run the host. This keeps the app running using the HostedService.
 var host = builder.Build();

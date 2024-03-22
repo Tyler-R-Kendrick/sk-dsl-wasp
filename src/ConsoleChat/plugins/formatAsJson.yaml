@@ -1,0 +1,41 @@
+name: formatAsJson
+description: formats the response as structured json.
+template: |
+  {{console.log "running getJson"}}
+  <message role="system">Instructions: Format the response as json.
+  Do not explain the reasoning, just reply back with json. If you are unsure, reply with:
+  {
+    "error": "Unable to format response as json",
+    "result": "<result>"
+  }</message>
+
+  {{#each fewShotExamples}}
+      {{#each this}}
+          <message role="{{role}}">{{content}}</message>
+      {{/each}}
+  {{/each}}
+
+  {{ConversationSummaryPlugin.SummarizeConversation history}}
+
+  <message role="user">{{input}}</message>
+  <message role="system">{ "content": "<result>"  }</message>
+template_format: handlebars
+input_variables:
+  - name:          fewShotExamples
+    description:   Few shot examples for the AI to learn from
+    is_required:   false
+  - name:          input
+    description:   The user's request
+    is_required:   true
+execution_settings:
+  default:
+    max_tokens:   10
+    temperature:  0
+  gpt-3.5-turbo:
+    model_id:     gpt-3.5-turbo-0613
+    max_tokens:   10
+    temperature:  0.2
+  gpt-4:
+    model_id:     gpt-4-1106-preview
+    max_tokens:   10
+    temperature:  0.2

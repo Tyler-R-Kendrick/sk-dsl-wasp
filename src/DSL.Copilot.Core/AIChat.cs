@@ -5,13 +5,15 @@ using Microsoft.Extensions.Logging;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 using Microsoft.SemanticKernel.Connectors.OpenAI;
+
 namespace Plugins;
 
 public abstract class AIChat(
     TextReader reader,
     TextWriter writer,
     IChatCompletionService completions,
-    ILogger<AIChat> logger)
+    ILogger<AIChat> logger,
+    ChatHistory history)
     : BackgroundService
 {
     protected abstract string SystemPrompt { init; get; }
@@ -19,7 +21,7 @@ public abstract class AIChat(
     protected override sealed async Task ExecuteAsync(CancellationToken cancellationToken)
     {
         logger.LogTrace("Starting Chat Session...");
-        ChatHistory history = [];
+        history.AddSystemMessage(SystemPrompt);
 
         OpenAIPromptExecutionSettings settings = new()
         {
