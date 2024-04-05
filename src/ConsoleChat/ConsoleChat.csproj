@@ -6,6 +6,7 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="$(ProjectName).Tests;DynamicProxyGenAssembly2" />
+    <PackageReference Include="editorconfig" Version="0.15.0" />
     <ProjectReference Include="..\DSL.Copilot.Core\*.csproj" />
     <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="6.0.0" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="6.0.0" />
@@ -15,6 +16,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="config/.editorconfig">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="config/appsettings.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

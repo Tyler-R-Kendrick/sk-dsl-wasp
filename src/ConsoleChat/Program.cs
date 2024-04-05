@@ -36,9 +36,24 @@ builder.ConfigureServices((_, services) =>
             builder.Services.AddChatCompletionService(kernelSettings);
             builder.Plugins.AddFromType<ConsoleLogPlugin>("console");
             builder.Plugins.AddFromType<CodeValidatorPlugin>("code_validator");
+            builder.Plugins.AddFromType<CodeLinterPlugin>("code_linter");
             builder.Plugins.AddFromType<FileIOPlugin>("file");
             builder.Plugins.AddFromType<ConversationSummaryPlugin>();
             var kernel = builder.Build();
+            kernel.FunctionFilters.Add(new DefaultFunctionFilter(
+                onInvoked: async context =>
+                {
+                    ConsoleAnnotator.WriteLine($"intercepting {context.Function.Name}", ConsoleColor.DarkYellow);
+                    if(context.Function.Name != "generateCode") return;
+                    var provider = kernel.Services;
+                    var result = await kernel.InvokeAsync("code_linter", "LintCode", new()
+                    {
+                        { "code", context.Result },
+                        { "path", "config/.editorconfig" },
+                        { "language", "csharp" }
+                    });
+                    context.SetResultValue(result.ToString());
+                }));
             kernel.Plugins.AddFromFunctions("yaml_plugins", [
                 kernel.CreateFunctionFromPromptYaml(
                     File.ReadAllText("plugins/formatAsJson.yaml")!,

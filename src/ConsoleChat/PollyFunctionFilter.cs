@@ -81,6 +81,17 @@ public class AwaitableFunctionFilterProxy(IFunctionFilter filter)
     }
     public override TaskAwaiter GetAwaiter() => base.GetAwaiter();
 }
+public class DefaultFunctionFilter(
+    Action<FunctionInvokingContext>? onInvoking = null,
+    Action<FunctionInvokedContext>? onInvoked = null)
+    : IFunctionFilter
+{
+    public virtual void OnFunctionInvoked(FunctionInvokedContext context)
+        => onInvoked?.Invoke(context);
+    public virtual void OnFunctionInvoking(FunctionInvokingContext context)
+        => onInvoking?.Invoke(context);
+}
+
 public class AwaitableFunctionFilter
     : IFunctionFilter
 {

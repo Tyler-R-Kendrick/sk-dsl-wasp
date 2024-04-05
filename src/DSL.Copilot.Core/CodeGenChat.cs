@@ -51,7 +51,7 @@ public class CodeGenChat(Kernel kernel,
     {
         var result = await base.GetUserInputAsync(cancellationToken);
         var output = await GetCode(result, cancellationToken);
-        writer.WriteLine("Output > " + output);
+        await writer.WriteLineAsync("Output > " + output);
         return result;
     }
 }
