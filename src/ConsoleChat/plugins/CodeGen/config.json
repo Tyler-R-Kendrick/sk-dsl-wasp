@@ -17,18 +17,18 @@
                 "defaultValue": "any example of code"
             },
             {
-                "name": "language",
-                "description": "The language to generate code in",
-                "defaultValue": "csharp"
+                "name": "history",
+                "description": "History of the conversation.",
+                "defaultValue": ""
+            },
+            {
+                "name": "few_shot",
+                "description": "Few shot examples for the model.",
+                "defaultValue": ""
             },
             {
                 "name": "grammar",
-                "description": "The ANTLR file defining the grammar for the language",
-                "defaultValue": "grammars/csharp.g4"
-            },
-            {
-                "name": "history",
-                "description": "The chat history to use for context",
+                "description": "Grammar definition used for code generation.",
                 "defaultValue": ""
             }
         ]

@@ -6,30 +6,22 @@ using static System.Environment;
 
 public class PluginsFunctionsFacade(Kernel kernel)
 {
-    public Task<FunctionResult> GetJson(string input, CancellationToken cancellationToken)
-        => kernel.InvokeAsync("plugins", "CodeGen", new()
+    public async Task<FunctionResult> GetCode(string input, ChatHistory localHistory,
+        CancellationToken cancellationToken, string grammar = "grammars/csharp.g4")
+        => await kernel.InvokeAsync("yaml_plugins", "generateCode", new()
         {
             { "input", input },
-        }, cancellationToken);
-    public Task<FunctionResult> GetCode(string input, ChatHistory localHistory,
-        CancellationToken cancellationToken, string grammar = "grammars/csharp.g4", string language = "csharp")
-        => kernel.InvokeAsync("plugins", "CodeGen", new()
-        {
-            { "input", input },
-            { "grammar", grammar },
-            { "language", language },
+            { "grammar", await File.ReadAllLinesAsync(grammar) },
             { "history", string.Join(NewLine, localHistory) }
         }, cancellationToken);
 
     public Task<FunctionResult> ValidateCode(string input,
-        ChatHistory history,
         string language = "csharp",
         CancellationToken cancellationToken = default)
         => kernel.InvokeAsync("code_validator", "ValidateCode", new()
         {
             { "input", input },
-            { "language", language },
-            { "history", string.Join(NewLine, history) }
+            { "language", language }
         }, cancellationToken);
 
     public Task<FunctionResult> Retry(FunctionInvokedContext context, KernelArguments args)

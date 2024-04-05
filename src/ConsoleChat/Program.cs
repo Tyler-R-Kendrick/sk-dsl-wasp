@@ -1,5 +1,4 @@
 ﻿using System.Reactive.Linq;
-using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -9,7 +8,7 @@ using Microsoft.SemanticKernel.Plugins.Core;
 using Microsoft.SemanticKernel.PromptTemplates.Handlebars;
 using Plugins;
 using Polly;
-using static System.Environment;
+
 // Load the kernel settings
 var kernelSettings = KernelSettings.LoadSettings();
 
@@ -26,7 +25,6 @@ var builder = Host.CreateDefaultBuilder(args)
 builder.ConfigureServices((_, services) =>
 {
     // Add kernel settings to the host builder
-    var functionFacade = new FunctionFilterMediator();
     services
         .AddSingleton(kernelSettings)
         .AddTransient(serviceProvider => {
@@ -36,78 +34,67 @@ builder.ConfigureServices((_, services) =>
                 .SetMinimumLevel(LogLevel.Information));
             builder.Services.AddChatCompletionService(kernelSettings);
             builder.Plugins.AddFromType<ConsoleLogPlugin>("console");
-            builder.Plugins.AddFunctionFilter(onInvoked: context => 
-            {
-                ConsoleAnnotator.WriteLine($"func: {context.Function.Name}", ConsoleColor.DarkGreen);
-                functionFacade.OnNext(context);
-            });
             builder.Plugins.AddFromType<CodeValidatorPlugin>("code_validator");
             builder.Plugins.AddFromType<FileIOPlugin>("file");
             builder.Plugins.AddFromType<ConversationSummaryPlugin>();
-            builder.Plugins.AddFromPromptDirectory("plugins");
             var kernel = builder.Build();
-            KernelFunction formatAsJsonFunction = kernel.CreateFunctionFromPromptYaml(
-                File.ReadAllText("plugins/formatAsJson.yaml")!,
-                promptTemplateFactory: new HandlebarsPromptTemplateFactory()
-            );
-            builder.Plugins.AddFromFunctions("plugins", [formatAsJsonFunction]);
+            kernel.Plugins.AddFromFunctions("yaml_plugins", [
+                kernel.CreateFunctionFromPromptYaml(
+                    File.ReadAllText("plugins/formatAsJson.yaml")!,
+                    promptTemplateFactory: new HandlebarsPromptTemplateFactory()),
+                kernel.CreateFunctionFromPromptYaml(
+                    File.ReadAllText("plugins/generateCode.yaml")!,
+                    promptTemplateFactory: new HandlebarsPromptTemplateFactory()),
+            ]);
             return kernel;
         })
         .AddResilienceEnricher()
         .AddSingleton<PluginsFunctionsFacade>()
         .AddSingleton<ChatHistory>([])
+        .AddSingleton<CodeValidationStrategy>()
         .AddResiliencePipeline<string, FunctionResult>("code-gen", (config, context) =>
         {
             config.AddRetry(new()
             {
-                MaxRetryAttempts = 3,
+                MaxRetryAttempts = 2,
                 BackoffType = DelayBackoffType.Constant,
                 ShouldHandle = async args =>
                 {
                     var services = context.ServiceProvider;
-                    var history = services.GetRequiredService<ChatHistory>();
                     var codeOutcome = args.Outcome;
-                    if(codeOutcome.Exception != null)
+                    var exception = codeOutcome.Exception;
+                    if(exception != null)
                     {
-                        history.AddSystemMessage(codeOutcome.Exception.ToString());
+                        ConsoleAnnotator.WriteLine(exception.ToString(), ConsoleColor.DarkGray);
+                        services
+                            .GetRequiredService<ChatHistory>()
+                            .AddSystemMessage(exception.ToString());
                         return true;
                     }
-                    var plugins = services.GetRequiredService<PluginsFunctionsFacade>();
-                    var validationResult = await plugins.ValidateCode(
-                        args.Outcome.Result!.ToString()!,
-                        services.GetRequiredService<ChatHistory>(),
-                        "csharp");
-                    var resultString = validationResult.ToString().Normalize();
-                    ConsoleAnnotator.WriteLine(resultString);
-                    history.AddSystemMessage(resultString);
-                    var jsonResult = JsonSerializer.Deserialize<CodeValidationJsonResponse>(resultString);
-                    var isValid = jsonResult?.IsValid == true;
-                    if(!isValid && jsonResult != null && jsonResult.Errors != null && jsonResult.Errors.Length != 0
-                        && codeOutcome.Result != null && codeOutcome.Result.Metadata != null)
-                    {
-                        var codeResult = codeOutcome.Result;
-                        var code = codeResult!.Metadata!["code"];
-                        var codeString = $"The following code has errors:{NewLine}{code}";
-                        var errors = string.Join(NewLine, jsonResult);
-                        var errorString = $"Correct the following errors in the code:{NewLine}{errors}";
-                        history.AddUserMessage(codeString + NewLine + errorString);
-                    }
-                    return !isValid;
+                    var shouldRetry = !await services
+                        .GetRequiredService<CodeValidationStrategy>()
+                        .ValidateAsync(codeOutcome.Result!);
+                    ConsoleAnnotator.WriteLine($"Should retry: {shouldRetry}");
+                    return shouldRetry;
                 }
             });
         })
         .AddHostedService<CodeGenChat>(provider =>
         {
-            var kernel = provider.GetRequiredService<Kernel>();
+            T Get<T>(string? key = null) where T : notnull => key == null
+                ? provider.GetRequiredService<T>()
+                : provider.GetRequiredKeyedService<T>(key);
             return new(
-                kernel,
-                provider.GetRequiredKeyedService<ResiliencePipeline<FunctionResult>>("code-gen"),
-                new PluginsFunctionsFacade(kernel),
-                provider.GetRequiredService<ChatHistory>(),
+                Get<Kernel>(),
+                Get<ResiliencePipeline<FunctionResult>>("code-gen"),
+                Get<PluginsFunctionsFacade>(),
+                Get<ChatHistory>(),
                 File.ReadAllText("grammars/csharp.g4"),
                 "csharp",
-                provider.GetRequiredService<ILoggerFactory>()
-                    .CreateLogger<CodeGenChat>());
+                Get<ILoggerFactory>()
+                    .CreateLogger<CodeGenChat>(),
+                Console.In,
+                Console.Out);
         });
 });
 

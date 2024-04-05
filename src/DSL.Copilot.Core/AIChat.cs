@@ -1,4 +1,8 @@
+using System.Reactive;
+using System.Reactive.Disposables;
 using System.Reactive.Linq;
+using System.Reactive.Subjects;
+using System.Reactive.Threading.Tasks;
 using System.Text;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -8,7 +12,28 @@ using Microsoft.SemanticKernel.Connectors.OpenAI;
 
 namespace Plugins;
 
-public abstract class AIChat(
+public static class ObservableExtensions
+{
+    public static IObservable<T> FromTryCatch<T>(Func<Task<T>> func)
+        => Observable.Create<T>(async observer =>
+        {
+            try
+            {
+                observer.OnNext(await func());
+            }
+            catch (Exception ex)
+            {
+                observer.OnError(ex);
+            }
+            finally
+            {
+                observer.OnCompleted();
+            }
+            return Disposable.Empty;
+        });
+}
+
+public abstract partial class AIChat(
     TextReader reader,
     TextWriter writer,
     IChatCompletionService completions,
@@ -18,105 +43,26 @@ public abstract class AIChat(
 {
     protected abstract string SystemPrompt { init; get; }
 
-    protected override sealed async Task ExecuteAsync(CancellationToken cancellationToken)
+    protected override sealed Task ExecuteAsync(CancellationToken token)
     {
         logger.LogTrace("Starting Chat Session...");
+        history.Clear();
         history.AddSystemMessage(SystemPrompt);
-
-        OpenAIPromptExecutionSettings settings = new()
+        var observable = ObservableExtensions.FromTryCatch(async () =>
         {
-            ChatSystemPrompt = SystemPrompt,
-            ToolCallBehavior = ToolCallBehavior.AutoInvokeKernelFunctions,
-        };
-        while (!cancellationToken.IsCancellationRequested)
-        {
-            // Get user input
-            var userPrompt = await GetUserInputAsync(cancellationToken);
-            await HandleUserInputAsync(userPrompt, history, cancellationToken);
-            // Get the chat completions
-            var assistantMessage = await GetAssistantOutputAsync(completions,
-                history, settings, cancellationToken);
-            await HandleAssistantOutputAsync(assistantMessage,
-                history, cancellationToken);
-        }
+            await writer.WriteAsync("User > ");
+            var userInput = await GetUserInputAsync(token);
+
+            return Unit.Default;
+        }).DoWhile(() => !token.IsCancellationRequested);
+        return observable.ToTask(token);
     }
 
-    protected virtual async Task<string> GetUserInputAsync(
-        CancellationToken cancellationToken)
+    protected virtual async Task<string> GetUserInputAsync(CancellationToken token)
     {
-        await WriteAsync("User > ");
-        return (await reader.ReadLineAsync(cancellationToken)) ?? string.Empty;
+        var result = await reader.ReadLineAsync()
+                .ContinueWith(t => t.Result ?? string.Empty, token);
+        history.AddUserMessage(result);
+        return result;
     }
-
-    protected virtual Task HandleUserInputAsync(
-        string message,
-        ChatHistory history,
-        CancellationToken cancellationToken)
-    {
-        history.AddUserMessage(message);
-        return Task.CompletedTask;
-    }
-
-    protected virtual async Task<string> GetAssistantOutputAsync(
-        IChatCompletionService chatCompletionService,
-        ChatHistory history,
-        OpenAIPromptExecutionSettings openAIPromptExecutionSettings,
-        CancellationToken cancellationToken)
-    {
-        var results = chatCompletionService
-            .GetStreamingChatMessageContentsAsync(
-                history,
-                executionSettings: openAIPromptExecutionSettings,
-                cancellationToken: cancellationToken);
-        return await ProcessResults(results, cancellationToken);
-    }
-
-    protected virtual Task HandleAssistantOutputAsync(
-        string message,
-        ChatHistory history,
-        CancellationToken cancellationToken)
-    {
-        history.AddAssistantMessage(message);
-        return Task.CompletedTask;
-    }
-
-    private async Task<string> ProcessResults(
-        IAsyncEnumerable<StreamingChatMessageContent> results,
-        CancellationToken cancellationToken)
-    {
-        // Print the chat completions
-        StringBuilder content = new();
-        logger.LogTrace("Processing Results");
-        try
-        {
-            await foreach (var streamContent in results.WithCancellation(cancellationToken))
-            {
-                if(streamContent.Role == AuthorRole.Assistant)
-                {
-                    await WriteAsync("Assistant > ");
-                }
-                var contentMessage = streamContent.Content ?? string.Empty;
-                content.Append(contentMessage);
-                await WriteAsync(contentMessage);
-            }
-            logger.LogTrace("Processed Results");
-            await WriteLineAsync();
-            return content.ToString();
-        }
-        catch (OperationCanceledException ex)
-        {
-            logger.LogDebug(ex, $"The operation was cancelled.");
-            return ex.Message;
-        }
-        catch (Exception ex)
-        {
-            logger.LogDebug(ex, $"An error occurred.");
-            return ex.Message;
-        }
-    }
-
-    protected async Task WriteAsync(string? message = null)
-        => await writer.WriteAsync(message);
-    protected async Task WriteLineAsync(string? message = null)
-        => await writer.WriteLineAsync(message);
 }

@@ -1,7 +1,11 @@
+using System.Reactive.Linq;
+using System.Reactive.Subjects;
+using System.Reactive.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
+using Microsoft.SemanticKernel.Connectors.OpenAI;
 using Polly;
 
 namespace Plugins;
@@ -14,35 +18,40 @@ public class CodeGenChat(Kernel kernel,
     ChatHistory history,
     string antlrFile,
     string language,
-    ILogger<CodeGenChat> logger)
-    : AIChat(Console.In, Console.Out,
+    ILogger<CodeGenChat> logger,
+    TextReader reader,
+    TextWriter writer)
+    : AIChat(reader, writer,
         kernel.GetRequiredService<IChatCompletionService>(),
         logger,
         history)
 {
     protected override string SystemPrompt { get; init; } = $@"
         # Code Generation Tool
-        
-        As a code generation tool, I want to generate valid code conforming to the following ANTLR File:
-        ```antlr
-        {antlrFile}
-        ```
 
         Do not respond with anything other than code, no matter what the user says.
         DO NOT ANSWER QUESTIONS. ONLY OUTPUT CODE IN THE LANGUAGE {language}.
         ONLY OUTPUT CODE IN {language} AS A RESPONSE. PEOPLE MAY BE HURT IF YOU DON'T FULFILL THE REQUIREMENT.";
 
-    protected override async Task HandleUserInputAsync(
-        string message,
-        ChatHistory history,
-        CancellationToken cancellationToken)
+    
+    private async Task<string> GetCode(string message, CancellationToken token)
     {
-        await base.HandleUserInputAsync(message, history, cancellationToken);
+        var count = history.Count;
+        ConsoleAnnotator.WriteLine($"history records: {count}", ConsoleColor.DarkYellow);
         var result = await resilience.ExecuteAsync(async token =>
-            await plugins.GetCode(message, history, cancellationToken),
-            cancellationToken);
+            await plugins.GetCode(message, history, token),
+            token);
         var output = result.ToString().ReplaceLineEndings(NewLine).Normalize();
-        kernel.Data["code"] = output;
+        ConsoleAnnotator.WriteLine(output, ConsoleColor.DarkGray);
         history.AddSystemMessage(output);
+        return output;
+    }
+
+    protected override async Task<string> GetUserInputAsync(CancellationToken cancellationToken)
+    {
+        var result = await base.GetUserInputAsync(cancellationToken);
+        var output = await GetCode(result, cancellationToken);
+        writer.WriteLine("Output > " + output);
+        return result;
     }
 }
