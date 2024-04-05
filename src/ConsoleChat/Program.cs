@@ -1,4 +1,4 @@
-﻿using System.Reactive.Linq;
+using System.Reactive.Linq;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -27,7 +27,8 @@ builder.ConfigureServices((_, services) =>
     // Add kernel settings to the host builder
     services
         .AddSingleton(kernelSettings)
-        .AddTransient(serviceProvider => {
+        .AddTransient(serviceProvider =>
+        {
             var builder = Kernel.CreateBuilder();
             builder.Services.AddLogging(c => c
                 .AddConsole()
@@ -63,7 +64,7 @@ builder.ConfigureServices((_, services) =>
                     var services = context.ServiceProvider;
                     var codeOutcome = args.Outcome;
                     var exception = codeOutcome.Exception;
-                    if(exception != null)
+                    if (exception != null)
                     {
                         ConsoleAnnotator.WriteLine(exception.ToString(), ConsoleColor.DarkGray);
                         services
