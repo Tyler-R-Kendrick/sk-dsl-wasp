@@ -12,6 +12,7 @@ public class PluginsFunctionsFacade(Kernel kernel)
         {
             { "input", input },
             { "grammar", await File.ReadAllLinesAsync(grammar) },
+            { "fewShotExamples", await File.ReadAllLinesAsync("examples/csharp.md") },
             { "history", string.Join(NewLine, localHistory) }
         }, cancellationToken);
 
