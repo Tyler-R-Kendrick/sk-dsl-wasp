@@ -111,3 +111,15 @@ public class AwaitableFunctionFilter
     public virtual TaskAwaiter GetAwaiter()
         => TaskHandle.GetAwaiter();
 }
+
+public class DefaultPromptFilter(
+    Action<PromptRenderingContext>? onRendering = null,
+    Action<PromptRenderedContext>? onRendered = null)
+    : IPromptFilter
+{
+    public void OnPromptRendered(PromptRenderedContext context)
+        => onRendered?.Invoke(context);
+
+    public void OnPromptRendering(PromptRenderingContext context)
+        => onRendering?.Invoke(context);
+}

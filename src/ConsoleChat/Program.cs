@@ -62,6 +62,29 @@ builder.ConfigureServices((_, services) =>
                     File.ReadAllText("plugins/generateCode.yaml")!,
                     promptTemplateFactory: new HandlebarsPromptTemplateFactory()),
             ]);
+            kernel.PromptFilters.Add(new DefaultPromptFilter(
+                onRendering: context =>
+                {
+                    if(context.Arguments.ContainsName("input"))
+                    {
+                        ConsoleAnnotator.WriteLine("intercepting prompt rendering", ConsoleColor.DarkYellow);
+                        var input = context.Arguments["input"] as string ?? string.Empty;
+                        //Protects prompt injection from Handlebars
+                        input = input
+                            .Replace("{{", "{{{{")
+                            .Replace("}}", "}}}}");
+                        context.Arguments["input"] = input;
+                    }
+                },
+                onRendered: context =>
+                {
+                    ConsoleAnnotator.WriteLine("intercepting prompt rendered", ConsoleColor.DarkYellow);
+                    //Protects prompt injection from Handlebars
+                    var prompt = context.RenderedPrompt
+                            .Replace("{{", "{{{{")
+                            .Replace("}}", "}}}}");
+                    context.RenderedPrompt = prompt;
+                }));
             return kernel;
         })
         .AddResilienceEnricher()
