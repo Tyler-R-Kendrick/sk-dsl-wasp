@@ -4,10 +4,13 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
+using Microsoft.SemanticKernel.Memory;
 using Microsoft.SemanticKernel.Plugins.Core;
 using Microsoft.SemanticKernel.PromptTemplates.Handlebars;
 using Plugins;
 using Polly;
+using System.Linq;
+using Microsoft.KernelMemory;
 
 // Load the kernel settings
 var kernelSettings = KernelSettings.LoadSettings();
@@ -29,6 +32,27 @@ builder.ConfigureServices((_, services) =>
         .AddSingleton(kernelSettings)
         .AddTransient(serviceProvider =>
         {
+            var memoryBuilder = new KernelMemoryBuilder();
+            var settings = kernelSettings;
+            switch(settings.ServiceType.ToUpperInvariant())
+            {
+                case ServiceTypes.AzureOpenAI :
+                    memoryBuilder.WithAzureOpenAITextEmbeddingGeneration(new AzureOpenAIConfig
+                    {
+                        APIKey = settings.ApiKey,
+                        APIType = AzureOpenAIConfig.APITypes.EmbeddingGeneration,
+                        Endpoint = settings.Endpoint,
+                        Auth = AzureOpenAIConfig.AuthTypes.APIKey,
+                        Deployment = settings.DeploymentId
+                    });
+                    break;
+                case ServiceTypes.OpenAI:
+                    memoryBuilder.WithOpenAIDefaults(settings.ApiKey);
+                    break;
+                default:
+                    throw new ArgumentException($"Invalid service type value: {settings.ServiceType}");
+            }
+
             var builder = Kernel.CreateBuilder();
             builder.Services.AddLogging(c => c
                 .AddConsole()
@@ -41,6 +65,25 @@ builder.ConfigureServices((_, services) =>
             builder.Plugins.AddFromType<ConversationSummaryPlugin>();
             var kernel = builder.Build();
             kernel.FunctionFilters.Add(new DefaultFunctionFilter(
+                onInvoking: async context =>
+                {
+                    if(context.Function.Name != "generateCode") return;
+                    var fewShotExamples = context.Arguments["fewShotExamples"] as string ?? string.Empty;
+                    var input = context.Arguments["input"] as string ?? string.Empty;
+                    
+                    var memory = memoryBuilder
+                        .Build<MemoryServerless>();
+                    // Import a file
+                    await memory.ImportDocumentAsync("examples/csharp.md").ConfigureAwait(false);
+                    var memoryResults = await memory.AskAsync(input).ConfigureAwait(false);
+                    if(memoryResults.Result != null)
+                    {
+                        ConsoleAnnotator.WriteLine($"loading fewshots: {memoryResults.Result}");
+                        fewShotExamples += "\n" + memoryResults.Result;
+                        context.Arguments["fewShotExamples"] = fewShotExamples;
+                    }
+                }));
+            kernel.FunctionFilters.Add(new DefaultFunctionFilter(
                 onInvoked: async context =>
                 {
                     ConsoleAnnotator.WriteLine($"intercepting {context.Function.Name}", ConsoleColor.DarkYellow);
@@ -52,7 +95,9 @@ builder.ConfigureServices((_, services) =>
                         { "path", "config/.editorconfig" },
                         { "language", "csharp" }
                     });
-                    context.SetResultValue(result.ToString());
+                    var resultString = result.ToString();
+                    ConsoleAnnotator.WriteLine($"linted:{resultString}", ConsoleColor.DarkYellow);
+                    context.SetResultValue(resultString);
                 }));
             kernel.Plugins.AddFromFunctions("yaml_plugins", [
                 kernel.CreateFunctionFromPromptYaml(
